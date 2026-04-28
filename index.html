@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Fake News Detector</title>
+
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --text: #ffffff;
+      --button: #22c55e;
+      --button-hover: #16a34a;
+    }
+
+    body.light {
+      --bg: #f1f5f9;
+      --card: #ffffff;
+      --text: #0f172a;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      transition: 0.3s;
+    }
+
+    .container {
+      background: var(--card);
+      padding: 30px;
+      border-radius: 15px;
+      width: 500px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      text-align: center;
+    }
+
+    h1 {
+      margin-bottom: 10px;
+    }
+
+    .toggle {
+      margin-bottom: 15px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    textarea {
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      border: none;
+      resize: none;
+      font-size: 15px;
+      outline: none;
+    }
+
+    button {
+      margin-top: 15px;
+      padding: 12px;
+      width: 100%;
+      border: none;
+      border-radius: 10px;
+      background: var(--button);
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background: var(--button-hover);
+    }
+
+    .result {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 10px;
+      font-size: 18px;
+      display: none;
+    }
+
+    .real {
+      background: #16a34a;
+    }
+
+    .fake {
+      background: #dc2626;
+    }
+
+    .loading {
+      margin-top: 15px;
+      font-size: 14px;
+      opacity: 0.7;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+  <h1>🧠 Fake News Detector</h1>
+
+  <div class="toggle" onclick="toggleTheme()">
+    🌙 Toggle Dark / Light
+  </div>
+
+  <textarea id="news" rows="5" placeholder="Paste news content here..."></textarea>
+
+  <button onclick="checkNews()">Analyze</button>
+
+  <div class="loading" id="loading"></div>
+  <div class="result" id="result"></div>
+</div>
+
+<script>
+  // Load saved theme
+  if (localStorage.getItem("theme") === "light") {
+    document.body.classList.add("light");
+  }
+
+  function toggleTheme() {
+    document.body.classList.toggle("light");
+
+    // Save preference
+    if (document.body.classList.contains("light")) {
+      localStorage.setItem("theme", "light");
+    } else {
+      localStorage.setItem("theme", "dark");
+    }
+  }
+
+  async function checkNews() {
+    const text = document.getElementById("news").value;
+    const resultDiv = document.getElementById("result");
+    const loading = document.getElementById("loading");
+
+    if (!text.trim()) {
+      alert("Please enter some news text");
+      return;
+    }
+
+    loading.innerText = "Analyzing...";
+    resultDiv.style.display = "none";
+
+    try {
+      const response = await fetch("http://127.0.0.1:5000/predict", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ text })
+      });
+
+      const data = await response.json();
+
+      loading.innerText = "";
+
+      resultDiv.style.display = "block";
+      resultDiv.className = "result " + (data.prediction === "REAL" ? "real" : "fake");
+
+      resultDiv.innerHTML = `
+        <b>Prediction:</b> ${data.prediction} <br>
+        <b>Confidence:</b> ${(data.confidence * 100).toFixed(2)}%
+      `;
+    } catch (error) {
+      loading.innerText = "";
+      alert("Error connecting to server");
+    }
+  }
+</script>
+
+</body>
+</html>
